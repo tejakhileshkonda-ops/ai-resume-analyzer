@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types  # Import types for structured configurations
 from dotenv import load_dotenv
 
-# 1. Load secret API key safely from the hidden file
+# Load secret API key safely
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 
@@ -18,159 +18,181 @@ if api_key:
 else:
     st.error("⚠️ GEMINI_API_KEY not found! Verify that your .env file is configured properly.")
 
-# Configure page width and layout
-st.set_page_config(page_title="AI Resume Scorer", layout="wide")
+# Configure page width and layout to wide dashboard view
+st.set_page_config(page_title="Enterprise AI Resume Scorer", layout="wide")
 
-def convert_pdf_to_image(uploaded_file):
-    """Parses PDF binary data directly in memory and renders Page 1 to an image."""
+def convert_all_pdf_pages_to_images(uploaded_file):
+    """Parses ALL PDF pages in memory and returns a list of PIL Images to handle multi-page resumes."""
     pdf_bytes = uploaded_file.read()
     pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
     
-    page = pdf_document.load_page(0)  # Extract page 1
-    pix = page.get_pixmap(dpi=150)    # Convert text layout to visual pixel map
-    img_data = pix.tobytes("png")
-    
-    return Image.open(io.BytesIO(img_data))
+    images = []
+    # Loop through every page dynamically
+    for page_num in range(len(pdf_document)):
+        page = pdf_document.load_page(page_num)
+        pix = page.get_pixmap(dpi=150)    # Crisp resolution scaling
+        img_data = pix.tobytes("png")
+        images.append(Image.open(io.BytesIO(img_data)))
+        
+    return images
 
-# --- UI FRONTEND ---
-st.title("🎯 Personalized AI Resume Scorer")
+# --- UI FRONTEND DASHBOARD ---
+st.title("🎯 Enterprise Multimodal AI Resume Analyzer")
+st.markdown("🥇 **Advanced Candidate Assessment Platform & Job Matching Engine**")
 st.markdown("---")
 
-# Left Sidebar Control Form
-st.sidebar.header("👤 User Profile Settings")
-username = st.sidebar.text_input("Enter your Username:", placeholder="e.g., Alex77")
+# Left Sidebar Control Panel Form
+st.sidebar.header("👤 Candidate Profile Settings")
+username = st.sidebar.text_input("Enter Candidate Name/Handle:", placeholder="e.g., Alex77")
 target_role = st.sidebar.text_input("Target Job Role:", placeholder="e.g., Data Scientist")
-experience_years = st.sidebar.number_input("Years of Experience:", min_value=0, max_value=40, step=1, value=0)
+experience_years = st.sidebar.number_input("Years of Professional Experience:", min_value=0, max_value=40, step=1, value=0)
 
 st.sidebar.markdown("---")
-uploaded_file = st.sidebar.file_uploader("Upload your Resume (PDF format)", type=["pdf"])
+st.sidebar.header("📋 Job Specification")
+# Upgraded Feature: Interactive Job Description Matcher Input Frame
+job_description = st.sidebar.text_area("Paste Targeted Job Description text (Optional):", placeholder="Paste raw job criteria from LinkedIn/Indeed here to calculate true semantic overlap...")
 
-# Main Dashboard Frame
+st.sidebar.markdown("---")
+uploaded_file = st.sidebar.file_uploader("Upload Resume (PDF format supported)", type=["pdf"])
+
+# Main Dashboard Container Execution Layer
 if uploaded_file:
-    st.subheader(f"📊 Live Analysis Dashboard for: {username if username else 'Guest'}")
-    col1, col2 = st.columns([1, 1.2]) # Side-by-side display split
+    st.subheader(f"📊 Live ATS Evaluation Workspace for: {username if username else 'Guest'}")
+    col1, col2 = st.columns([1, 1.2]) # High-impact side-by-side split
     
+    # Process all pages immediately to prevent pipeline blockages
+    try:
+        # Save a clean reset pointer reference point
+        uploaded_file.seek(0)
+        resume_images_list = convert_all_pdf_pages_to_images(uploaded_file)
+    except Exception as e:
+        st.error(f"Error reading PDF structure: {e}")
+        resume_images_list = []
+        
     with col1:
-        st.markdown("### 📄 Converted Resume Image")
-        try:
-            resume_image = convert_pdf_to_image(uploaded_file)
-            st.image(resume_image, caption="Visual Layout View", use_container_width=True)
-        except Exception as e:
-            st.error(f"Error rendering PDF layout: {e}")
+        st.markdown("### 📄 Document Visual Flow")
+        if resume_images_list:
+            # Display page 1 preview visually on the interactive column canvas
+            st.image(resume_images_list[0], caption=f"Resume Preview (Page 1 of {len(resume_images_list)})", use_container_width=True)
+            if len(resume_images_list) > 1:
+                st.info(f"ℹ️ Core processing pipeline has securely batched all {len(resume_images_list)} pages into the multimodal attention vector layer.")
             
     with col2:
-        st.markdown("### 🤖 Live AI Evaluation Metrics")
+        st.markdown("### 🤖 Real-Time Evaluation Metrics")
         
-        # Core trigger button
-        if st.sidebar.button("Generate Score", type="primary"):
+        # Central Execution Button
+        if st.sidebar.button("Execute AI Analysis", type="primary"):
             if not username or not target_role:
-                st.sidebar.warning("⚠️ Please provide both a Username and a Target Role.")
+                st.sidebar.warning("⚠️ Please fill in the Candidate Name and Target Job Role in the sidebar panel.")
             else:
-                with st.spinner("Gemini is analyzing structure and scoring match criteria..."):
+                with st.spinner("Gemini is parsing multi-page visual elements & scoring semantic parameters..."):
                     try:
-                        # Enforce a strict JSON schema blueprint format
+                        # Construct a hyper-targeted analytical prompt layout
                         prompt = f"""
                         You are an elite corporate technical recruiter and automated ATS evaluation engine.
-                        Examine the attached resume image critically. The candidate's reference handle is '{username}'.
+                        Examine the attached resume images critically. The candidate's reference handle is '{username}'.
                         They are targeting the role of '{target_role}' with '{experience_years}' years of industry experience.
+                        """
                         
+                        # Dynamically inject the complex JD parameters if provided by the user
+                        if job_description:
+                            prompt += f"\nCRITICAL INSTRUCTION: Evaluate the resume strictly against this custom target job description:\n'''{job_description}'''"
+                        
+                        prompt += """
                         Return a valid JSON object matching this exact key structure:
-                        {{
+                        {
                             "final_score": integer_value_between_0_and_100,
                             "match_status": "Excellent" or "Good" or "Needs Improvement",
                             "role_alignment": "Your short text feedback here",
                             "experience_verification": "Your short text feedback here",
                             "visual_layout": "Your short text feedback here",
                             "missing_keywords": ["keyword1", "keyword2", "keyword3"]
-                        }}
+                        }
                         """
                         
-                        # Call model using JSON configuration schema constraints
+                        # Pack all generated images alongside the core textual prompt array block
+                        contents_payload = [prompt] + resume_images_list
+                        
+                        # Execute structured deep multimodal evaluation
                         response = client.models.generate_content(
                             model='gemini-2.5-flash',
-                            contents=[prompt, resume_image],
+                            contents=contents_payload,
                             config=types.GenerateContentConfig(
                                 response_mime_type="application/json"
                             )
                         )
                         
-                        # Parse JSON text string into a native Python dictionary
+                        # Parse out data dictionary metrics safely
                         result_data = json.loads(response.text)
                         
-                        # Save inside session state tracking dictionary memory
+                        # Commit data structures to local application cache storage
                         st.session_state['result_data'] = result_data
                         st.session_state['processed_user'] = username
                         
                     except Exception as ai_error:
                         st.error(f"Failed to communicate with AI Engine. Details: {ai_error}")
 
-        # --- DASHBOARD VISUALIZATION RENDERING LAYER ---
+        # --- DYNAMIC DASHBOARD VISUALIZATION CARDS (UPGRADED UI) ---
         if 'result_data' in st.session_state and st.session_state.get('processed_user') == username:
             data = st.session_state['result_data']
             
-            # Extract key layout values
             score = data['final_score']
             status = data['match_status']
             
-            # Graphical score meters
-            st.metric(label="Overall Suitability Rating", value=f"{score} / 100", delta=status)
+            # Draw premium top-level scoreboard metrics
+            st.metric(label="Overall Suitability Index Score", value=f"{score} / 100", delta=status)
             st.progress(score / 100) 
             
             st.markdown("---")
             
-            # Dynamic Column Breakdowns
-            metric_col1, metric_col2 = st.columns(2)
-            with metric_col1:
-                st.info(f"**💼 Role Alignment**\n\n{data['role_alignment']}")
-                st.success(f"**🎨 Design & Formatting**\n\n{data['visual_layout']}")
-            with metric_col2:
-                st.warning(f"**⏳ Experience Check**\n\n{data['experience_verification']}")
+            # Premium Enterprise Card Containers
+            with st.container(border=True):
+                st.markdown("#### 📋 Core Analytic Breakdown")
                 
-                # Dynamic pill keywords mapping loop
-                st.markdown("**🔍 Recommended Missing Keywords:**")
-                keywords = data.get('missing_keywords', [])
-                if keywords:
-                    st.write(" ".join([f"`{kw}`" for kw in keywords]))
-                else:
-                    st.write("None! Perfect alignment.")
+                metric_col1, metric_col2 = st.columns(2)
+                with metric_col1:
+                    with st.container(border=True):
+                        st.markdown("💼 **Role Alignment Vector**")
+                        st.write(data['role_alignment'])
+                        
+                    with st.container(border=True):
+                        st.markdown("🎨 **Visual Formatting & Typography Criticism**")
+                        st.write(data['visual_layout'])
+                        
+                with metric_col2:
+                    with st.container(border=True):
+                        st.markdown("⏳ **Domain Experience Tracking Check**")
+                        st.write(data['experience_verification'])
+                        
+                    with st.container(border=True):
+                        st.markdown("🔍 **Strategic Keyword Recommendations**")
+                        keywords = data.get('missing_keywords', [])
+                        if keywords:
+                            st.write(" ".join([f"`{kw}`" for kw in keywords]))
+                        else:
+                            st.write("Perfect alignment! No critical vacancies found.")
             
-            # ==========================================
-            # 🛠️ DAY 7 ADDITION: REPORT EXPORT BUTTON
-            # ==========================================
-            
-            # Formulate the downloadable text layout template
+            # Generate the text summary compilation matrix layout report
             text_report = f"""==================================================
-AI RESUME SCORE REPORT FOR: {username}
-Target Job Role: {target_role}
-Declared Experience Threshold: {experience_years} Years
+AI RESUME ANALYZER EXPORT REPORT: {username}
+Target Profile Intent: {target_role}
+Experience Level Checked: {experience_years} Years
 ==================================================
-FINAL MATCH SUITABILITY: {score}/100 ({status})
+OVERALL SUITABILITY VALUE: {score}/100 ({status})
 
-[🔍 DETAILED EVALUATION CRITIQUE]
-
-* Role Alignment Status:
-  {data['role_alignment']}
-
-* Professional Experience Check:
-  {data['experience_verification']}
-
-* Visual Layout & Typography Review:
-  {data['visual_layout']}
-
-* Missing Keywords Identified:
-  {", ".join(keywords) if keywords else "None"}
-
-Generated automatically via the AI Resume Analyzer & Scorer Pipeline.
-=================================================="""
-
+- Role Alignment Analysis: {data['role_alignment']}
+- Professional Background Match: {data['experience_verification']}
+- Layout and Appearance Review: {data['visual_layout']}
+- Identified Missing Keyword Elements: {', '.join(keywords) if keywords else 'None'}
+==================================================™"""
+            
             st.markdown("---")
-            # Create the data stream download button
             st.download_button(
-                label="📥 Download Score Report",
+                label="📥 Export Report Data Summary",
                 data=text_report,
-                file_name=f"{username}_resume_score_report.txt",
+                file_name=f"{username}_comprehensive_score_report.txt",
                 mime="text/plain",
                 use_container_width=True
             )
 else:
-    st.info("Fill out your target profile info and upload a resume PDF to run the analyzer.")
+    st.info("Complete the parameter fields on the left sidebar profile template and drop a resume PDF file to populate the interactive metrics dashboard.")
