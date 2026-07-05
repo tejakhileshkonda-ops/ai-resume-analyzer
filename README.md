@@ -1,21 +1,35 @@
-# 🎯 Personalized AI Resume Scorer & Analyzer Dashboard
+# 🎯 Enterprise RAG-Based AI Resume Analyzer
 
-An advanced **Multimodal AI-powered Applicant Tracking System (ATS)** built to critically evaluate resume document formatting layouts alongside industry experience metrics using the updated **Google GenAI SDK** and **Gemini 2.5 Flash**.
+An advanced, production-grade Applicant Tracking System (ATS) evaluation engine built using a **Retrieval-Augmented Generation (RAG)** pipeline. Instead of feeding unoptimized blocks or lossy strings to a Large Language Model, this platform converts documents into vectors, indexes them locally using **FAISS**, and runs a semantic similarity search against targeted job descriptions before generating deterministic evaluation metrics using the **Google GenAI SDK (Gemini 2.5 Flash)**.
 
-## 🛠️ The Tech Stack Architecture
-- **Frontend/Dashboard:** Streamlit (Python-Native Reactive Data Framework)
-- **AI Core:** Google GenAI Engine (`gemini-2.5-flash` model)
-- **Document Processing:** PyMuPDF (`fitz`) for low-latency visual page encoding
-- **Memory Management:** Streamlit Session State RAM Caching
+---
 
-## 🚀 Key Production Features
-- **Multimodal Visual Processing:** Instead of parsing plain, lossy text strings, the system analyzes font hierarchies, spacing grids, and alignment layouts visually.
-- **Strict JSON Output Controls:** Configured API endpoints with a structural MIME-type mask to guarantee consistent data objects.
-- **Persistent Cache Tracking:** Implemented session states to preserve analytical scoring objects during UI interactions.
-- **In-Memory Document Exporting:** Generates real-time report summaries dynamically over local RAM buffers.
+## 🛠️ Tech Stack & Architecture
 
-## 📦 Local Configuration Guide
+- **Frontend / Core UI:** Streamlit (Python-native reactive framework)
+- **Vector Database:** FAISS-CPU (Facebook AI Similarity Search for high-speed vector lookup)
+- **Embedding Generation:** Sentence Transformers (`all-MiniLM-L6-v2`)
+- **Orchestration Layer:** Traditional RAG (Extract ➔ Chunk ➔ Embed ➔ Match ➔ Ground ➔ Generate)
+- **LLM Core Core Engine:** Google GenAI Engine (`gemini-2.5-flash` model)
+- **Document Processing:** PyMuPDF (`fitz`) for rapid memory-buffered PDF parsing
+- **Configuration Management:** Python-Dotenv
 
-1. Clone the project:
-   ```bash
-   git clone [https://github.com/your-username/ai-resume-analyzer.git](https://github.com/tejakhileshkonda-ops/ai-resume-analyzer.git)
+---
+
+## 🚀 Key Features
+
+* **Semantic RAG Pipeline:** Segments multi-page resume payloads into chunks and selects the top $K$ contextually matching fragments related to a specific Job Description, eliminating LLM context window clutter.
+* **Local In-Memory Vector Store:** Leverages FAISS for low-latency mathematical indexing and semantic matching.
+* **Deterministic Structured JSON Output:** Utilizes strict server-side MIME-type constraints (`application/json`) to eliminate raw text parsing instabilities.
+* **Persistent Application Memory:** Implements performance-efficient state tracking across user actions through local RAM serialization via `st.session_state`.
+* **Instant Document Exporting:** Compiles analytical suitability telemetry and matrix reviews into dynamic local text reports.
+
+---
+
+## 📦 Local Installation Guide
+
+### 1. Project Replication
+Clone this repository to your computer and navigate into its workspace:
+```bash
+git clone [https://github.com/tejakhileshkonda-ops/ai-resume-analyzer.git](https://github.com/tejakhileshkonda-ops/ai-resume-analyzer.git)
+cd ai-resume-analyzer
